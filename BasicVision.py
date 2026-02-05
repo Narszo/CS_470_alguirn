@@ -93,10 +93,14 @@ def main():
 
         # Show our image (with the filename as the window title)
         windowTitle = "PYTHON: " + filename
-        cv2.imshow(windowTitle, image)
+        
+        key = -1
+        while key == -1:
+            # Show image
+            cv2.imshow(windowTitle, image)
 
-        # Wait for a keystroke to close the window
-        cv2.waitKey(-1)
+            # Wait for a keystroke to close the window
+            key = cv2.waitKey(30)
 
         # Cleanup this window
         cv2.destroyAllWindows()
