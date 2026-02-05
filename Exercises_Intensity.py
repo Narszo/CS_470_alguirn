@@ -11,6 +11,38 @@ import sklearn
 import timm
 import torchvision
 import matplotlib.pyplot as plt
+from enum import Enum
+
+class IntTransform(Enum):
+    ORIGINAL = "Original"
+    NEGATIVE = "Negative"
+    SLICE = "Intensity Slicing"
+    STRETCH = "Contrast Stretching"
+    
+def do_transform(image, chosenT):
+    if chosenT == IntTransform.ORIGINAL:
+        output = np.copy(image)
+        transform = np.arange(256, dtype="uint8")
+    elif chosenT == IntTransform.NEGATIVE:
+        output = 255 - image
+        transform = np.arange(255, -1, -1, dtype="uint8")
+    elif chosenT == IntTransform.SLICE:
+        windowMin = 100
+        windowMax = 150
+        lut = np.zeros((256,), dtype="uint8")
+        lut[windowMin:(windowMax+1)] = 255
+        output = lut[image]
+        transform = lut
+    elif chosenT == IntTransform.STRETCH:
+        points = [[0,0], [127, 50], [150,200], [255, 255]]
+        r_knots, s_knots = zip(*points)
+        one_inter = lambda r: np.interp(r, r_knots, s_knots)
+        r_values = np.arange(256, dtype="float64")
+        s_values = one_inter(r_values)
+        transform = np.clip(np.round(s_values),0,255).astype("uint8")
+        output =  transform[image]
+        
+    return output, transform
 
 def create_transform_plot(transform, title="Transformation Function"):
     fig, subfig = plt.subplots(1, 1, figsize=(5,5))
@@ -30,23 +62,19 @@ def update_transform_plot(transform, fig, fill, line):
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-def do_transform(image, chosenT):
-    
-    output = np.copy(image)
-    transform = np.arange(256, dtype="uint8")
-    
-    return output, transform
-
 ###############################################################################
 # MAIN
 ###############################################################################
 
 def main():        
     
-    chosenT = 0
+    print("INTENSITY TRANSFORMATIONS:")
+    for index, item in enumerate(list(IntTransform)):
+        print(index, "-", item.value)
+    chosen_index = int(input("Enter choice: "))
+    chosenT = list(IntTransform)[chosen_index]
     
     plt.ion()
-    
     tfig, tfill, tline = create_transform_plot(np.arange(256))
     
     ###############################################################################
@@ -148,12 +176,13 @@ def main():
         update_transform_plot(transform, tfig, tfill, tline)
 
         # Wait for a keystroke to close the window
-        key = cv2.waitKey(10)
+        key = cv2.waitKey(30)
 
     # Cleanup this window
     cv2.destroyAllWindows()
+    plt.close()
 
 # The main function
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()
     
