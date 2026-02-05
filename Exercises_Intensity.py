@@ -57,8 +57,32 @@ def create_transform_plot(transform, title="Transformation Function"):
     return fig, fill, line[0]
 
 def update_transform_plot(transform, fig, fill, line):
-    line.set_ydata(transform)
-    fill.set_verts([np.column_stack([np.arange(256), transform])])
+    line.set_ydata(transform) 
+    
+    x_coords = np.arange(256)
+    x_coords = np.append(x_coords, [255, 0])
+    
+    y_coords = np.copy(transform)
+    y_coords = np.append(y_coords, [0, 0]) 
+    
+    fill.set_verts([np.column_stack([x_coords, y_coords])])
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+def create_histogram_plot(image, title="Image Histogram"):
+    fig, subfig = plt.subplot(1, 1, figsize=(5,5))
+    x_values = np.arange(256)
+    counts,_ =np.histogram(image.flatten(), bins=256, range=[0,256])
+    bars = subfig.bar(x_values, counts, color="black", width = 1.0)
+    subfig.set_xlim([-5, 260])
+    subfig.set_xlable("Intensity")
+    subfig.set_title(title)
+    return fig, bars
+
+def update_histogram_plot(image, fig, bars):
+    counts,_ =np.histogram(image.flatten(), bins=256, range=[0,256])
+    for count, bar in zip(counts, bars):
+        bar.set_height(count)
     fig.canvas.draw()
     fig.canvas.flush_events()
 
@@ -76,6 +100,13 @@ def main():
     
     plt.ion()
     tfig, tfill, tline = create_transform_plot(np.arange(256))
+    print(len(sys.argv))
+    hist_fig, hist_bars = create_histogram_plot(
+                            np.zeros((64,64), dtype="uint8"), 
+                            title="Input Image Histogram")
+    out_hist_fig, out_hist_bars = create_histogram_plot(
+                                        np.zeros((64,64), dtype="uint8"),
+                                        title="Output Image Histogram")
     
     ###############################################################################
     # PYTORCH
@@ -102,6 +133,7 @@ def main():
     ###############################################################################
     # OPENCV
     ###############################################################################
+   
     if len(sys.argv) <= 1:
         # Webcam
         print("Opening the webcam...")
@@ -132,6 +164,9 @@ def main():
             # Show the image
             cv2.imshow(windowName, grayscale)
             cv2.imshow("OUTPUT", output)
+            
+            update_histogram_plot(grayscale, hist_fig, hist_bars)
+            update_histogram_plot(output, out_hist_fig, out_hist_bars)
 
             # Wait 30 milliseconds, and grab any key presses
             key = cv2.waitKey(30)
@@ -174,6 +209,9 @@ def main():
         cv2.imshow("OUTPUT", output)
         
         update_transform_plot(transform, tfig, tfill, tline)
+        
+        update_histogram_plot(grayscale, hist_fig, hist_bars)
+        update_histogram_plot(output, out_hist_fig, out_hist_bars)
 
         # Wait for a keystroke to close the window
         key = cv2.waitKey(30)
