@@ -68,6 +68,23 @@ def update_transform_plot(transform, fig, fill, line):
     fill.set_verts([np.column_stack([x_coords, y_coords])])
     fig.canvas.draw()
     fig.canvas.flush_events()
+    
+def create_histogram_plot(image, title="Image Histogram"):
+    fig, subfig = plt.subplots(1, 1, figsize=(5,5))
+    x_values = np.arange(256)
+    counts,_ = np.histogram(image.flatten(), bins=256, range=[0,256])
+    bars = subfig.bar(x_values, counts, color="black", width=1.0)
+    subfig.set_xlim([-5, 260])
+    subfig.set_xlabel("Intensity")
+    subfig.set_title(title)
+    return fig, bars
+
+def update_histogram_plot(image, fig, bars):
+    counts,_ = np.histogram(image.flatten(), bins=256, range=[0,256])
+    for count, bar in zip(counts, bars):
+        bar.set_height(count)
+    fig.canvas.draw()
+    fig.canvas.flush_events()
 
 ###############################################################################
 # MAIN
@@ -101,6 +118,13 @@ def main():
         
     plt.ion()
     tfig, tfill, tline = create_transform_plot(np.arange(256))
+    
+    hist_fig, hist_bars = create_histogram_plot(
+                            np.zeros((64,64), dtype="uint8"), 
+                            title="Input Image Histogram")
+    out_hist_fig, out_hist_bars = create_histogram_plot(
+                                        np.zeros((64,64), dtype="uint8"),
+                                        title="Output Image Histogram")
            
     ###############################################################################
     # PYTORCH
@@ -158,6 +182,9 @@ def main():
             # Show the image
             cv2.imshow(windowName, grayscale)
             cv2.imshow("OUTPUT", output)
+            
+            update_histogram_plot(grayscale, hist_fig, hist_bars)
+            update_histogram_plot(output, out_hist_fig, out_hist_bars)
 
             # Wait 30 milliseconds, and grab any key presses
             key = cv2.waitKey(30)
@@ -198,6 +225,9 @@ def main():
             cv2.imshow("OUTPUT", output)
             
             update_transform_plot(transform, tfig, tfill, tline)
+            
+            update_histogram_plot(grayscale, hist_fig, hist_bars)
+            update_histogram_plot(output, out_hist_fig, out_hist_bars)
 
             # Wait for a keystroke to close the window
             key = cv2.waitKey(30)
