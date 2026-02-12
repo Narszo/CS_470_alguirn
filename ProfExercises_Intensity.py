@@ -12,12 +12,15 @@ import timm
 import torchvision
 import matplotlib.pyplot as plt
 from enum import Enum
+from torch import nn
+from torchvision.transforms import v2
 
 class IntTransform(Enum):
     ORIGINAL = "Original"
     NEGATIVE = "Negative"
     SLICE = "Intensity Slicing"
     STRETCH = "Constrast Stretching"
+    HISTEQ = "Histogram Equalization (and Stretching)"
     
 def do_transform(image, chosenT):
     if chosenT == IntTransform.ORIGINAL:
@@ -41,7 +44,11 @@ def do_transform(image, chosenT):
         s_values = one_inter(r_values)
         transform = np.clip(np.round(s_values),0,255).astype("uint8")
         output = transform[image]
-    
+    elif chosenT == IntTransform.HISTEQ:
+        output = cv2.equalizeHist(image)
+        transform = np.zeros(256, dtype="uint8")
+        transform[image.flatten()] = output.flatten()
+            
     return output, transform
 
 def create_transform_plot(transform, title="Transformation Function"):
@@ -92,6 +99,21 @@ def update_histogram_plot(image, fig, bars):
 
 def main(): 
     
+    conv_layer = nn.Conv2d(in_channels=3, out_channels=1, kernel_size=1, bias=False)
+    model = nn.Sequential(conv_layer)
+    print(model)
+    
+    loss_fn = nn.MSELoss() # nn.L1Loss
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    
+    device = "cuda" # "cpu" or "mps"
+    model = model.to(device)
+    
+    data_transform = v2.Compose([
+                        v2.ToImage(),
+                        v2.ToDtype(torch.float32, scale=True)
+    ])
+        
     image = np.array([[0,1,2,3],
                       [3,2,1,0],
                       [2,0,3,1]], dtype="uint8")
@@ -175,13 +197,41 @@ def main():
             _, image = camera.read()
             
             grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            output, transform = do_transform(grayscale, chosenT)
             
+            gray_channel = np.expand_dims(grayscale, axis=-1)
+            
+            desired_output = data_transform(gray_channel)
+            desired_output = torch.unsqueeze(desired_output, 0)
+            
+            data_input = data_transform(image)
+            data_input = torch.unsqueeze(data_input, 0)
+            
+            #print("Input:", data_input.shape)
+            #print("Output:", desired_output.shape)
+            
+            model.train()
+            data_input = data_input.to(device)
+            desired_output = desired_output.to(device)
+            pred_output = model(data_input)
+            loss = loss_fn(pred_output, desired_output)
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            
+            out_image = pred_output.detach().cpu()
+            out_image = out_image.numpy()
+            out_image = out_image[0]
+            out_image = np.transpose(out_image, [1,2,0])
+            
+            output, transform = do_transform(grayscale, chosenT)            
             update_transform_plot(transform, tfig, tfill, tline)
                         
             # Show the image
             cv2.imshow(windowName, grayscale)
             cv2.imshow("OUTPUT", output)
+            cv2.imshow("PREDICTED", out_image)
+            
+            print("Weights:", conv_layer.weight.detach().cpu().numpy())
             
             update_histogram_plot(grayscale, hist_fig, hist_bars)
             update_histogram_plot(output, out_hist_fig, out_hist_bars)
