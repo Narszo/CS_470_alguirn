@@ -34,9 +34,16 @@ def make_simple_complex(length=600):
     complex_data += np.reshape(1j*values, (-1,1))
     #print(complex_data)
     return complex_data
+
+def compute_fourier(image):
+    fimage = image.astype("float64")
+    return cv2.dft(fimage, flags=cv2.DFT_COMPLEX_OUTPUT)
+
+def compute_inverse_fourier(freq):
+    return cv2.idft(freq, flags=cv2.DFT_REAL_OUTPUT+cv2.DFT_SCALE)
     
 
-def do_frequency(image):
+def do_frequency(image, mask_image):
     output = np.copy(image)
     return output
 
@@ -47,6 +54,7 @@ def do_frequency(image):
 
 def main(): 
     
+    '''
     complex_data = make_simple_complex(length=600)
     mag, phase = complex_to_polar(complex_data)
     complex_image = to_complex_image(complex_data)
@@ -63,7 +71,18 @@ def main():
     cv2.destroyAllWindows()
     
     exit()
+    '''
+    
+    simple1D = np.array([[1,2,4,4]])
+    simple_fourier = compute_fourier(simple1D)
+    simple_complex = to_numpy_complex(simple_fourier)
+    print("ORIGINAL:", simple1D)
+    print("FOURIER:", simple_complex)
+    simple_recon = compute_inverse_fourier(simple_fourier)
+    print("RECON:", simple_recon)
+    exit()
        
+    mask_image = None
            
     ###############################################################################
     # PYTORCH
@@ -107,16 +126,27 @@ def main():
         cv2.namedWindow(windowName)
 
         # While not closed...
+        ESC_KEY = 27
         key = -1
-        while key == -1:
+        while key != ESC_KEY:
             # Get next frame from camera
             _, image = camera.read()
+            grayscale = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+            
+            if mask_image is None:
+                mask_image = np.ones(grayscale.shape, dtype="float64")
+            
+            output = do_frequency(grayscale, mask_image)
             
             # Show the image
-            cv2.imshow(windowName, image)
+            cv2.imshow(windowName, grayscale)
+            cv2.imshow("OUTPUT", output)
 
             # Wait 30 milliseconds, and grab any key presses
             key = cv2.waitKey(30)
+            
+            if key == ord('c'):
+                mask_image = np.ones(grayscale.shape, dtype="float64")
 
         # Release the camera and destroy the window
         camera.release()
