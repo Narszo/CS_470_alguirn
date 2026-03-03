@@ -13,6 +13,22 @@ import torchvision
 from enum import Enum
 from torch import nn
 from torchvision.transforms import v2
+from numpy.lib.stride_tricks import sliding_window_view
+
+def do_window_example():
+    rows, cols = 4,5
+    image = np.reshape(np.arange(rows*cols), (rows,cols))
+    print(image)
+    patches = sliding_window_view(image, window_shape=(3,3))
+    #print(patches)
+    print(patches.shape)
+    kernel = np.array([[1,2,1],
+                       [0,0,0],
+                       [-1,-2,-1]])
+    output = np.tensordot(patches, kernel, axes=[(2,3), (0,1)])
+    print(output)
+    print(output.shape)
+    exit()
 
 class FilterType(Enum):
     BOX = "Box Filter"
@@ -82,7 +98,9 @@ def do_filter(image, filter_size, filter_type):
 # MAIN
 ###############################################################################
 
-def main():   
+def main(): 
+    
+    do_window_example()  
     
     conv_layer = nn.Conv2d(in_channels=1, 
                            out_channels=1, 
