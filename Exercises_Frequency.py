@@ -11,6 +11,20 @@ import sklearn
 import timm
 import torchvision
 
+mouse_down = False
+def on_mouse(event, x, y, flags, param):
+    global mouse_down
+    if event == cv2.EVENT_LBUTTONUP:
+        mouse_down = False
+    elif (event == cv2.EVENT_LBUTTONDOWN or
+          (mouse_down and event == cv2.EVENT_MOUSEMOVE)):
+        mouse_down = True
+        mask_image = param[0]
+        circle_radius = param[1]
+        fill_value = 0.0
+        cv2.circle(mask_image, (x,y),
+                   circle_radius, fill_value, -1)
+
 def to_numpy_complex(complex_image):
     planes = cv2.split(complex_image)
     complex_data = planes[0] + 1j*planes[1]
@@ -25,6 +39,23 @@ def complex_to_polar(complex_data):
     mag = np.abs(complex_data)
     phase = np.angle(complex_data)
     return mag, phase
+
+def polar_to_complex(mag, phase):
+    return mag * np.exp(1j*phase)
+
+def shift_complex(complex_data):
+    return np.fft.fftshift(complex_data)
+
+def unshift_complex(complex_data):
+    return np.fft.ifftshift(complex_data)
+
+def image_space_shift(image):
+    rows, cols = image.shape[:2]
+    row_powers = (-1)**np.arange(rows)[:,None]
+    col_powers = (-1)**np.arange(cols)[None,:]
+    neg_powers = row_powers * col_powers
+    output = image * neg_powers
+    return output
 
 def make_simple_complex(length=600):
     hl = length/2
@@ -41,7 +72,6 @@ def compute_fourier(image):
 
 def compute_inverse_fourier(freq):
     return cv2.idft(freq, flags=cv2.DFT_REAL_OUTPUT+cv2.DFT_SCALE)
-    
 
 def do_frequency(image, mask_image):
     output = np.copy(image)
@@ -72,7 +102,7 @@ def main():
     
     exit()
     '''
-    
+    '''
     simple1D = np.array([[1,2,4,4]])
     simple_fourier = compute_fourier(simple1D)
     simple_complex = to_numpy_complex(simple_fourier)
@@ -81,7 +111,8 @@ def main():
     simple_recon = compute_inverse_fourier(simple_fourier)
     print("RECON:", simple_recon)
     exit()
-       
+    '''
+    
     mask_image = None
            
     ###############################################################################
