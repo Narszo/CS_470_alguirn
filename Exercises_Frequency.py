@@ -73,8 +73,45 @@ def compute_fourier(image):
 def compute_inverse_fourier(freq):
     return cv2.idft(freq, flags=cv2.DFT_REAL_OUTPUT+cv2.DFT_SCALE)
 
-def do_frequency(image, mask_image):
+def get_optimal_dft_size(image):
+    m = cv2.getOptimalDFTSize(image.shape[0])
+    n = cv2.getOptimalDFTSize(image.shape[1])
+    return m,n
+
+
+def do_frequency(image, mask_image, draw_radius):
+    m,n = get_optimal_dft_size(image)
     output = np.copy(image)
+    padded = cv2.copyMakeBorder(image, 0, m - image.shape[0], 0, n - image.shape[1], cv2.BORDER_CONSTANT, value=0)
+    fourier = compute_fourier(padded)
+    fourier_data = to_numpy_complex(fourier)
+    mag,phase = complex_to_polar(fourier_data)
+    log_mag = cv2.log(mag + 1.0)
+    cv2.normalize(log_mag, log_mag, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+    display_phase = np.copy(phase)
+    cv2.normalize(display_phase, display_phase, norm_type=cv2.NORM_MINMAX)
+    
+    log_mag = shift_complex(log_mag)
+    mag = shift_complex(mag)
+    
+    mag_window_name = cv2.namedWindow("MAGNITUDE")
+    mask_pack = [mask_image, draw_radius]
+    cv2.setMouseCallback(mag_window_name, on_mouse, mask_pack)
+    
+    mag *= mask_image
+    log_mag *= mask_image
+    
+    cv2.imshow(mag_window_name, log_mag)
+    cv2.imshow("PHASE", display_phase)
+    
+    mag = unshift_complex(mag)
+    complex_data = polar_to_complex(mag, phase)
+    complex_image = to_complex_image(complex_data)
+    
+    output = compute_inverse_fourier(complex_data)
+    output = output[:image.shape[0], :image.shape[1]]
+    output /= 255.0
+    
     return output
 
 
@@ -162,11 +199,15 @@ def main():
         while key != ESC_KEY:
             # Get next frame from camera
             _, image = camera.read()
-            grayscale = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+            grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            
             
             if mask_image is None:
-                mask_image = np.ones(grayscale.shape, dtype="float64")
-            
+                m,n = get_optimal_dft_size(grayscale)
+                mask_image = np.ones((m,n), dtype="float64")
+                
+            #grayscale = np.ones((17,17), dtype="uint8")
+            #mask_image = np.ones(grayscale.shape)
             output = do_frequency(grayscale, mask_image)
             
             # Show the image
@@ -177,8 +218,14 @@ def main():
             key = cv2.waitKey(30)
             
             if key == ord('c'):
-                mask_image = np.ones(grayscale.shape, dtype="float64")
-
+                #mask_image = np.ones(grayscale.shape, dtype="float64")
+                mask_image[:,:] = 1.0
+            elif key == ord('a'):
+                draw_radius +=5
+            elif key == ord('z'):
+                draw_radius -= 5
+                
+            draw_radius = max(draw_radius, 5)
         # Release the camera and destroy the window
         camera.release()
         cv2.destroyAllWindows()
@@ -195,23 +242,46 @@ def main():
         # Load image
         print("Loading image:", filename)
         image = cv2.imread(filename) 
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
         # Check if data is invalid
-        if image is None:
-            print("ERROR: Could not open or find the image!")
-            exit(1)
-
+        if mask_image is None:
+                m,n = get_optimal_dft_size(grayscale)
+                mask_image = np.ones((m,n), dtype="float64")
+                
         # Show our image (with the filename as the window title)
         windowTitle = "PYTHON: " + filename
         
+        ESC_KEY = 27
         key = -1
-        while key == -1:
-            # Show image
-            cv2.imshow(windowTitle, image)
+        while key != ESC_KEY:
+            
+            
+            
+            if mask_image is None:
+                m,n = get_optimal_dft_size(grayscale)
+                mask_image = np.ones((m,n), dtype="float64")
+                
+            #grayscale = np.ones((17,17), dtype="uint8")
+            #mask_image = np.ones(grayscale.shape)
+            output = do_frequency(grayscale, mask_image, 5)
+            
+            # Show the image
+            cv2.imshow(windowName, grayscale)
+            cv2.imshow("OUTPUT", output)
 
-            # Wait for a keystroke to close the window
+            # Wait 30 milliseconds, and grab any key presses
             key = cv2.waitKey(30)
-
+            
+            if key == ord('c'):
+                #mask_image = np.ones(grayscale.shape, dtype="float64")
+                mask_image[:,:] = 1.0
+            elif key == ord('a'):
+                draw_radius +=5
+            elif key == ord('z'):
+                draw_radius -= 5
+                
+            draw_radius = max(draw_radius, 5)
         # Cleanup this window
         cv2.destroyAllWindows()
 
