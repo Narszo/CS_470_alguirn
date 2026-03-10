@@ -68,20 +68,84 @@ def make_simple_complex(length=600):
     #print(complex_data)
     return complex_data
 
-def compute_fourier(image):
+def compute_fourier(image, nonzeroRows=0):
     fimage = image.astype("float64")
-    return cv2.dft(fimage, flags=cv2.DFT_COMPLEX_OUTPUT)
+    return cv2.dft(fimage, flags=cv2.DFT_COMPLEX_OUTPUT, nonzeroRows=nonzeroRows)
 
-def compute_inverse_fourier(freq):
-    return cv2.idft(freq, flags=cv2.DFT_REAL_OUTPUT+cv2.DFT_SCALE)
+def compute_inverse_fourier(freq, nonzeroRows=0):
+    return cv2.idft(freq, flags=cv2.DFT_REAL_OUTPUT+cv2.DFT_SCALE,
+                    nonzeroRows=nonzeroRows)
+    
+def make_display_magnitude(mag):
+    display_mag = cv2.log(mag + 1.0)
+    cv2.normalize(display_mag, display_mag, norm_type=cv2.NORM_MINMAX)
+    return display_mag
 
 def get_optimal_dft_size(image):
     m = cv2.getOptimalDFTSize(image.shape[0])
     n = cv2.getOptimalDFTSize(image.shape[1])
     return m,n
+
+def make_gaussian_filter(side_len):
+    gaussianCol = cv2.getGaussianKernel(side_len, sigma=0)
+    gaussianRow = np.transpose(gaussianCol)
+    kernel = np.matmul(gaussianCol, gaussianRow)
+    return kernel
+
+def complex_image_to_display_mag(complex_image):
+    complex_data = to_numpy_complex(complex_image)
+    mag, _ = complex_to_polar(complex_data)
+    display_mag = make_display_magnitude(mag)
+    return display_mag
     
+def filter_with_fourier(image, kernel):
+    padded_rows = cv2.getOptimalDFTSize(image.shape[0] + kernel.shape[0] - 1)
+    padded_cols = cv2.getOptimalDFTSize(image.shape[1] + kernel.shape[1] - 1)
+    
+    fimage = image.astype("float64")
+    fkernel = kernel.astype("float64")
+    
+    padded_image = cv2.copyMakeBorder(fimage, 
+                                      0, padded_rows - image.shape[0], 
+                                      0, padded_cols - image.shape[1],
+                                      borderType=cv2.BORDER_CONSTANT,
+                                      value=0)
+    
+    padded_kernel = cv2.copyMakeBorder(fkernel, 
+                                      0, padded_rows - kernel.shape[0], 
+                                      0, padded_cols - kernel.shape[1],
+                                      borderType=cv2.BORDER_CONSTANT,
+                                      value=0)
+    
+    padded_image = image_space_shift(padded_image)
+    padded_kernel = image_space_shift(padded_kernel)
+    
+    F = compute_fourier(padded_image)
+    H = compute_fourier(padded_kernel)    
+    G = cv2.mulSpectrums(F, H, 0, conjB=False)
+    
+    display_F = complex_image_to_display_mag(F)
+    display_H = complex_image_to_display_mag(H)
+    display_G = complex_image_to_display_mag(G)
+    cv2.imshow("MAGNITUDE F", display_F)
+    cv2.imshow("MAGNITUDE H", display_H)
+    cv2.imshow("MAGNITUDE G", display_G)
+    
+    padded_output = compute_inverse_fourier(G, nonzeroRows=(
+                                                image.shape[0] + kernel.shape[0]-1))
+    padded_output = image_space_shift(padded_output)
+    
+    sr = int(kernel.shape[0]/2)
+    er = sr + image.shape[0]
+    sc = int(kernel.shape[1]/2)
+    ec = sc + image.shape[1]
+        
+    output = np.copy(padded_output[sr:er, sc:ec])
+    output /= 255.0
+    return output
 
 def do_frequency(image, mask_image, draw_radius):
+    '''
     m,n = get_optimal_dft_size(image)   
     padded = cv2.copyMakeBorder(image, 
                                 0, m - image.shape[0],
@@ -91,9 +155,8 @@ def do_frequency(image, mask_image, draw_radius):
     fourier = compute_fourier(padded)
     fourier_data = to_numpy_complex(fourier)
     mag, phase = complex_to_polar(fourier_data)
-    log_mag = cv2.log(mag + 1.0)
     
-    cv2.normalize(log_mag, log_mag, norm_type=cv2.NORM_MINMAX)
+    log_mag = make_display_magnitude(mag)
     display_phase = np.copy(phase)
     cv2.normalize(display_phase, display_phase, norm_type=cv2.NORM_MINMAX)
     
@@ -121,7 +184,11 @@ def do_frequency(image, mask_image, draw_radius):
     output /= 255.0    
     
     return output
-
+    '''
+    
+    kernel = make_gaussian_filter(81)
+    output = filter_with_fourier(image, kernel)
+    return output
 
 ###############################################################################
 # MAIN
