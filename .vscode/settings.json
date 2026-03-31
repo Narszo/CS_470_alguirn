@@ -1,12 +1,13 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "python-envs.pythonProjects": [],
     "python.testing.unittestArgs": [
         "-v",
         "-s",
         ".",
         "-p",
-        "Test_*.py"
+        "test_*.py"
     ],
     "python.testing.pytestEnabled": false,
     "python.testing.unittestEnabled": true
