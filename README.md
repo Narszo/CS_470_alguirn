@@ -14,3 +14,8 @@ Image(s) will be displayed until a key is hit.
 ### A01.py
 Several grayscale intensity transformations that are accessed through a Gradio web interface.
 The Gradio interface allows Histogram stretching, Log, Gamma, Histogram Equalization, and Piecewise transformations
+
+### A02.py:
+Image convolution with and without loops as well as a Fourier filter.
+It launches a Gradio interface where users can upload a grayscale image and a kernel file,
+adjust alpha and beta values, and view the filtered output interactively.
