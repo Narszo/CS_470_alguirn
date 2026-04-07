@@ -41,7 +41,7 @@ def main():
     ###############################################################################
     # OPENCV
     ###############################################################################
-    '''if len(sys.argv) <= 1:
+    """if len(sys.argv) <= 1:
         # Webcam
         print("Opening the webcam...")
 
@@ -75,25 +75,30 @@ def main():
 
         # Close down...
         print("Closing application...")
-    '''
+
+    else:"""
+    # Trying to load image from argument
+
     # Get filename
     filename = sys.argv[1]
+
     # Load image
     print("Loading image:", filename)
     image = cv2.imread(filename) 
+    
+    grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    chosen, output = cv2.threshold(grayscale, 0, 255, cv2.THRESH_OTSU)
+    
     # Check if data is invalid
     if image is None:
         print("ERROR: Could not open or find the image!")
         exit(1)
+
     # Show our image (with the filename as the window title)
     windowTitle = "PYTHON: " + filename
     
-    
-    
     key = -1
     while key == -1:
-        
-        
         # Show image
         cv2.imshow(windowTitle, image)
 

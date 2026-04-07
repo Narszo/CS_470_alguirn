@@ -10,6 +10,8 @@ import pandas
 import sklearn
 import timm
 import torchvision
+from skimage.segmentation import slic
+from skimage.segmentation import mark_boundaries
 
 ###############################################################################
 # MAIN
@@ -92,10 +94,15 @@ def main():
     
     key = -1
     while key == -1:
+        segments = slic(image, n_segments=100, compactness=1, sigma=5) # start_labels=0
+        boundary_image = mark_boundaries(image, segments)
         
+        chosen_superpixel = 255*(segments == 3).astype("uint8")
         
         # Show image
         cv2.imshow(windowTitle, image)
+        cv2.imshow("Superpixels", boundary_image)
+        cv2.imshow("Chosen", chosen_superpixel)
 
         # Wait for a keystroke to close the window
         key = cv2.waitKey(30)

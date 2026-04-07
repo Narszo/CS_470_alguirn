@@ -41,8 +41,8 @@ def main():
     ###############################################################################
     # OPENCV
     ###############################################################################
-    '''if len(sys.argv) <= 1:
-        # Webcam
+    if len(sys.argv) <= 1:
+        '''# Webcam
         print("Opening the webcam...")
 
         # Linux/Mac (or native Windows) with direct webcam connection
@@ -75,7 +75,7 @@ def main():
 
         # Close down...
         print("Closing application...")
-    '''
+'''
     # Get filename
     filename = sys.argv[1]
     # Load image
@@ -88,14 +88,35 @@ def main():
     # Show our image (with the filename as the window title)
     windowTitle = "PYTHON: " + filename
     
-    
-    
     key = -1
     while key == -1:
+        points = np.reshape(image, (-1, 3)).astype("float32")
+        _, bestLabels, centers = cv2.kmeans(points, K=5, bestLabels=None,
+                                            criteria=(cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER,
+                                                        10, 1.0),
+                                            attempts=10,
+                                            flags=cv2.KMEANS_RANDOM_CENTERS)
+        print("Best Labels:", bestLabels.shape)
+        print("Centers:", centers.shape)
         
+        distance = centers - (0,0,255)
+        distance = np.square(distance)
+        distance = np.sum(distance, axis=-1)
+        chosen_center = np.argmin(distance)
+        print("Chosen_center:", chosen_center)
         
-        # Show image
+        chosen_labels = 255*(bestLabels == chosen_center).astype("uint8")
+        chosen_labels = chosen_labels.reshape(image.shape[:2])
+
+        
+        color_centers = centers.astype("uint8")
+        color_remap = centers[bestLabels.flatten()]
+        color_remap = color_remap.reshape(image.shape)
+
+        # Show Image
         cv2.imshow(windowTitle, image)
+        cv2.imshow("Remapped", color_remap)
+        cv2.imshow("Chosen", chosen_labels)
 
         # Wait for a keystroke to close the window
         key = cv2.waitKey(30)
