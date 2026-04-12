@@ -41,7 +41,7 @@ def main():
     ###############################################################################
     # OPENCV
     ###############################################################################
-    '''if len(sys.argv) <= 1:
+    """if len(sys.argv) <= 1:
         # Webcam
         print("Opening the webcam...")
 
@@ -75,27 +75,59 @@ def main():
 
         # Close down...
         print("Closing application...")
-    '''
+
+    else:"""
+    # Trying to load image from argument
+
     # Get filename
     filename = sys.argv[1]
+
     # Load image
     print("Loading image:", filename)
     image = cv2.imread(filename) 
+    
+    colors = [
+        (0,0,0), 
+        (0,0,255),
+        (0,255,0),
+        (255,0,0),
+        (255,0,255),
+        (255,255,0),
+        (0,255,255),
+        (255,255,255)
+    ]
+    colors = np.array(colors, dtype="uint8")
+     
+    
+    # Show the image
+    cv2.imshow(windowTitle, grayscale)
+    cv2.imshow("OTSU THRESHOLD", output)
+    print("Threshold:", chosen)
+    
     # Check if data is invalid
     if image is None:
         print("ERROR: Could not open or find the image!")
         exit(1)
+
     # Show our image (with the filename as the window title)
     windowTitle = "PYTHON: " + filename
     
-    
-    
     key = -1
     while key == -1:
-        
-        
         # Show image
-        cv2.imshow(windowTitle, image)
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        chosen, output = cv2.threshold(grayscale, 0, 255, cv2.THRESH_OTSU)       
+
+        numConnect, labelImage = cv2.connectedComponents(output, None, connectivity=8, ltype=cv2.CV_32S)
+        modLabels = labelImage % len(colors)
+        colorRegions = colors[modLabels]
+        chosenLabels = 255*(labelImage ==3).astype("uint8")
+        
+        cv2.imshow(windowTitle, grayscale)
+        cv2.imshow("OTSU THRESHOLD", output)
+        cv2.imshow("REGIONS", colorRegions)
+        cv2.imshow("Chosen", chosenLabels)
+        print("region count:", numConnect)
 
         # Wait for a keystroke to close the window
         key = cv2.waitKey(30)

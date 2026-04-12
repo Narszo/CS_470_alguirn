@@ -41,7 +41,7 @@ def main():
     ###############################################################################
     # OPENCV
     ###############################################################################
-    '''if len(sys.argv) <= 1:
+    if len(sys.argv) <= 1:
         # Webcam
         print("Opening the webcam...")
 
@@ -75,33 +75,56 @@ def main():
 
         # Close down...
         print("Closing application...")
-    '''
-    # Get filename
-    filename = sys.argv[1]
-    # Load image
-    print("Loading image:", filename)
-    image = cv2.imread(filename) 
-    # Check if data is invalid
-    if image is None:
-        print("ERROR: Could not open or find the image!")
-        exit(1)
-    # Show our image (with the filename as the window title)
-    windowTitle = "PYTHON: " + filename
-    
-    
-    
-    key = -1
-    while key == -1:
-        
-        
-        # Show image
-        cv2.imshow(windowTitle, image)
 
-        # Wait for a keystroke to close the window
-        key = cv2.waitKey(30)
+    else:
+        # Trying to load image from argument
 
-    # Cleanup this window
-    cv2.destroyAllWindows()
+        # Get filename
+        filename = sys.argv[1]
+
+        # Load image
+        print("Loading image:", filename)
+        image = cv2.imread(filename) 
+        
+        # Check if data is invalid
+        if image is None:
+            print("ERROR: Could not open or find the image!")
+            exit(1)
+
+        # Show our image (with the filename as the window title)
+        windowTitle = "PYTHON: " + filename
+        
+        target_color = np.array([[[0, 255, 0]]]) # BGR
+        min_dist = 200
+        
+        key = -1
+        ESC_KEY = 27
+        while key != ESC_KEY:
+            # Show image
+            #cv2.imshow(windowTitle, image)
+
+            diff = image - target_color
+            diff = np.square(diff)
+            diff = np.sum(diff, axis=-1)
+            diff = np.sqrt(diff)
+            
+            #print(np.min(diff), np.max(diff))
+            
+            output = (diff < min_dist).astype("float64")
+            
+            cv2.imshow(windowTitle, image)
+            cv2.imshow("DISTANCE", diff/400.0)
+            cv2.imshow("THRESH", output)
+            
+            # Wait for a keystroke to close the window
+            key = cv2.waitKey(30)
+            
+            if key == ord('a'): min_dist += 10
+            if key == ord('s'): min_dist -= 10
+            print(min_dist)
+
+        # Cleanup this window
+        cv2.destroyAllWindows()
 
 # The main function
 if __name__ == "__main__": 
