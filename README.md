@@ -19,3 +19,8 @@ The Gradio interface allows Histogram stretching, Log, Gamma, Histogram Equaliza
 Image convolution with and without loops as well as a Fourier filter.
 It launches a Gradio interface where users can upload a grayscale image and a kernel file,
 adjust alpha and beta values, and view the filtered output interactively.
+
+### A03.py:
+Uses color segmentation to detect WBC bounding boxes.
+SLIC superpixels group the image into color-coherent regions, then k-means clusters the superpixel mean colors.
+The cluster closest to blue is selected, morphological operations clean the resulting mask, and connected components extract bounding boxes.
