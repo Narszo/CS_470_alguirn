@@ -3,5 +3,7 @@ __pycache__/
 .pytest_cache/
 .micromamba/
 data/
+data/
+assign04/output/bigmodel.pth
 ~*
 *SECRET*
