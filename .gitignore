@@ -7,3 +7,5 @@ data/
 assign04/output/bigmodel.pth
 ~*
 *SECRET*
+final_project/server
+final_project/client
