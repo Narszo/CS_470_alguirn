@@ -11,8 +11,8 @@ import shutil
 from enum import Enum
 
 # NOTE: Uncomment this line and comment the following to restore original data directory
-BCCD_DATA_DIR = os.path.join(".", "data", "BCCD")
-#BCCD_DATA_DIR = os.path.join("..", "..", "data", "BCCD")
+#BCCD_DATA_DIR = os.path.join(".", "data", "BCCD")
+BCCD_DATA_DIR = os.path.join("..", "..", "data", "BCCD")
 
 BCCD_DATA_CSV = "data.csv"
 
