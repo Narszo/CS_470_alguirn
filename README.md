@@ -25,7 +25,7 @@ Uses color segmentation to detect WBC bounding boxes.
 SLIC superpixels group the image into color-coherent regions, then k-means clusters the superpixel mean colors.
 The cluster closest to blue is selected, morphological operations clean the resulting mask, and connected components extract bounding boxes.
 
-### A03.py:
+### A04.py:
 Image classification using two convolutional neural network architectures trained and evaluated with PyTorch.
 SimpleCNN: A basic CNN with three convolutional blocks (Conv → BatchNorm → ReLU → MaxPool) using 32/64/128 filters, followed by two fully-connected layers with Dropout. No data augmentation.
 ResCNN: A deeper residual CNN with skip connections and ELU activations. Uses three residual stages with 64/128/256 filters, adaptive average pooling, and random horizontal flip + random crop data augmentation during training.
